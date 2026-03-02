@@ -12,7 +12,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = 5                         # Fixed: Needed for move()
         
         # --- Mapping & World Setup ---
-        self.vision_radius = 150 
+        self.vision_radius = 200
         self.obstacle_sprites = obstacle_sprites
         self.tile_sprites = tile_sprites
 
