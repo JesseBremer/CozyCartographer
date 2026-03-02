@@ -1,0 +1,9 @@
+# Python virtual environment
+cozycart/
+
+# Unitialized files/compiled code
+__pycache__/
+*.pyc
+
+# Local environment variables
+.env
