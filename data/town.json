@@ -1,16 +1,18 @@
 {
     "name": "The Cartographer's Rest",
     "is_town": true,
-    "fog_color": [200, 200, 200],
+    "fog_color": [46, 52, 64],
     "map": [
-        "WWWWWWWWWWWWWWWWWWWW",
-        "W                  W",
-        "W     G      I     W",
-        "W                  W",
-        "W         P        W",
-        "W                  W",
-        "W     S      A     W",
-        "W                  W",
-        "WWWWWWWWWWWWWWWWWWWW"
+        "WWWWWWWWWW X WWWWWWWW",
+        "W                   W",
+        "W   [G]       [I]   W",
+        "W    |         |    W",
+        "W                   W",
+        "W         P         W",
+        "W                   W",
+        "W    |         |    W",
+        "W   [S]       [A]   W",
+        "W                   W",
+        "WWWWWWWWWWWWWWWWWWWWW"
     ]
 }

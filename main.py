@@ -25,10 +25,6 @@ class Game:
         self.level = Level(location_name, self.data)
 
     def check_transport(self):
-        """
-        Placeholder for logic to switch between town and dungeon.
-        Example: Press 'T' to go to town, 'D' to go to dungeon.
-        """
         keys = pygame.key.get_pressed()
         if keys[pygame.K_t] and self.current_location != 'town':
             self.current_location = 'town'
@@ -38,24 +34,57 @@ class Game:
             self.load_level('clockwork_conservatory')
 
     def run(self):
-        while True:
-            # 1. Event Handling
+            while True:
+                # 1. Event Handling
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+
+                # 2. Update Logic (Only call update ONCE)
+                # The level returns a string (like 'town' or 'SELECT_DUNGEON') if the player hits an exit
+                new_destination = self.level.update()
+                
+                if new_destination:
+                    if new_destination == "SELECT_DUNGEON":
+                        self.open_dungeon_menu()
+                    else:
+                        self.current_location = new_destination
+                        self.load_level(self.current_location)
+
+                # 3. Rendering Logic
+                self.screen.fill('#1a1c23')
+                self.level.render()
+                
+                pygame.display.update()
+                self.clock.tick(60)
+
+    def open_dungeon_menu(self):
+        selecting = True
+        while selecting:
+            self.screen.fill('#2e3440')
+            # For now, we'll use a simple print, but you can draw text here later
+            # This is the "Drafting Shack" phase of your Design Doc
+            print("--- CHOOSE DESTINATION ---")
+            print("1. Clockwork Conservatory")
+            print("2. Sunken Scriptorium (Locked)")
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-
-            # 2. Update Logic
-            self.check_transport() # Check if we need to switch maps
-            self.level.update()    # Handles player, fog, and interactions
-
-            # 3. Rendering Logic
-            self.screen.fill('#1a1c23')
-            self.level.render()    # Handles tiles, players, and fog mask
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        self.current_location = 'clockwork_conservatory'
+                        self.load_level(self.current_location)
+                        selecting = False
+                    if event.key == pygame.K_ESCAPE: # Back out
+                        # Move player away from exit so they don't re-trigger it
+                        self.level.player.pos.y += 10 
+                        selecting = False
             
-            # 4. Refresh
             pygame.display.update()
-            self.clock.tick(60)
+            self.clock.tick(60)   
 
 if __name__ == '__main__':
     Game().run()

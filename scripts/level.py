@@ -1,16 +1,15 @@
 import pygame
-import json # New import for reading files
+import json
 from scripts.tile import Tile
 from scripts.player import Player
-from scripts.objects import SpecialistObject
+from scripts.objects import SpecialistObject, TransportTile
 
 class Level:
     def __init__(self, dungeon_name, data_manager):
         self.display_surface = pygame.display.get_surface()
         self.data = data_manager
         
-        # 1. Load Dungeon Data from JSON
-        # Assuming your files are in a folder named 'data'
+        # 1. Load Dungeon Data from JSON FIRST
         with open(f'data/{dungeon_name}.json', 'r') as f:
             dungeon_data = json.load(f)
 
@@ -23,13 +22,14 @@ class Level:
         self.obstacle_sprites = pygame.sprite.Group()
         self.tile_sprites = pygame.sprite.Group()
         self.interactable_sprites = pygame.sprite.Group()
+        self.transport_sprites = pygame.sprite.Group() 
         
-        # 3. Setup Fog Mask using JSON color
+        # 3. Setup Fog Mask
         self.fog_mask = pygame.Surface(self.display_surface.get_size())
         self.fog_mask.fill(self.fog_color)
         self.fog_mask.set_colorkey((255, 0, 255))
 
-        # 4. Build the World
+        # 4. Build the World NOW that map_layout exists
         self.setup_level(self.map_layout)
 
     def setup_level(self, layout):
@@ -49,11 +49,12 @@ class Level:
                 elif col == 'A':
                     SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Architect', 150)
                 elif col == 'G':
-                    # Surveyor's Guild NPC
                     SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Guild', 0)
                 elif col == 'S':
-                    # Drafting Shack NPC
                     SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Shack', 0)
+                elif col == 'X':
+                    dest = "SELECT_DUNGEON" if self.is_town else "town"
+                    TransportTile((x,y), [self.visible_sprites, self.transport_sprites], dest)
 
     def check_interactions(self):
         keys = pygame.key.get_pressed()
@@ -63,12 +64,24 @@ class Level:
                 if dist < 80:
                     sprite.interact(self.data.current_kit)
 
+    def check_transport(self):
+        # Collision check with the exit tiles
+        for sprite in self.transport_sprites:
+            if sprite.rect.colliderect(self.player.rect):
+                return sprite.destination
+        return None
+
     def update(self):
+        # 1. Fog logic
         if not self.is_town:
             pygame.draw.circle(self.fog_mask, (255, 0, 255), self.player.rect.center, self.player.vision_radius)
         
+        # 2. Update sprites
         self.visible_sprites.update()
         self.check_interactions()
+
+        # 3. Return destination if hitting an exit (checked by main.py)
+        return self.check_transport()
 
     def render(self):
         player_pos = self.player.rect.center
