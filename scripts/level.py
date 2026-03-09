@@ -37,25 +37,35 @@ class Level:
             for col_index, col in enumerate(row):
                 x, y = col_index * 64, row_index * 64
                 
+                # Basic Tiles
                 if col == 'W':
                     Tile((x, y), [self.visible_sprites, self.obstacle_sprites, self.tile_sprites])
                 elif col == 'P':
                     self.player = Player((x, y), [self.visible_sprites], 
                                          self.obstacle_sprites, self.tile_sprites)
-                elif col == 'C':
-                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Cipher', 50)
-                elif col == 'E':
-                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Extractor', 100)
-                elif col == 'A':
-                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Architect', 150)
-                elif col == 'G':
-                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Guild', 0)
-                elif col == 'S':
+                
+                # --- VILLAGE META-LOOP BUILDINGS ---
+                elif col == 'H': # The Shack (Home)
                     SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Shack', 0)
+                elif col == 'F': # Ink Foundry
+                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Foundry', 0)
+                elif col == 'G': # Surveyor's Guild
+                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Guild', 0)
+                elif col == 'V': # The Archive
+                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Archive', 0)
+                elif col == 'L': # Greenhouse
+                    SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Greenhouse', 0)
+                
+                # --- DUNGEON SPECIALISTS ---
+                elif col == 'C': SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Cipher', 50)
+                elif col == 'E': SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Extractor', 100)
+                elif col == 'A': SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Architect', 150)
+                
+                # --- EXITS ---
                 elif col == 'X':
                     dest = "SELECT_DUNGEON" if self.is_town else "town"
                     TransportTile((x,y), [self.visible_sprites, self.transport_sprites], dest)
-
+                    
     def check_interactions(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:

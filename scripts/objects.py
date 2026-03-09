@@ -13,14 +13,26 @@ class SpecialistObject(pygame.sprite.Sprite):
         self.interacted = False
 
     def interact(self, current_kit):
-        if current_kit == self.lock_type:
-            print(f"Unlocked! Gained {self.reward} materials.")
-            self.interacted = True
-            self.kill() # Remove from world once claimed
-            return True
-        else:
-            print(f"I need the {self.lock_type} kit for this.")
-            return False
+            # 1. Define which objects are PERMANENT (Village Buildings)
+            village_buildings = ['Shack', 'Foundry', 'Guild', 'Archive', 'Greenhouse']
+            
+            # 2. Check if it's a village building OR if the player has the right kit
+            if self.lock_type in village_buildings:
+                print(f"Opening {self.lock_type} Menu...")
+                # We return True but DO NOT call self.kill()
+                return True 
+                
+            elif current_kit == self.lock_type:
+                # This is a Dungeon Reward (Cipher, Extractor, Architect)
+                print(f"Unlocked! Gained {self.reward_value} materials.")
+                self.interacted = True
+                self.kill() # Only dungeon rewards disappear
+                return True
+                
+            else:
+                # Failed interaction
+                print(f"Access Denied. Current Kit: {current_kit}. Required: {self.lock_type}.")
+                return False
 
 class TransportTile(pygame.sprite.Sprite):
     def __init__(self, pos, groups, destination):

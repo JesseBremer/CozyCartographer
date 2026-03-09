@@ -3,16 +3,14 @@
     "is_town": true,
     "fog_color": [46, 52, 64],
     "map": [
-        "WWWWWWWWWW X WWWWWWWW",
-        "W                   W",
-        "W   [G]       [I]   W",
-        "W    |         |    W",
-        "W                   W",
-        "W         P         W",
-        "W                   W",
-        "W    |         |    W",
-        "W   [S]       [A]   W",
-        "W                   W",
+        "WWWWWWWWW X WWWWWWWW",
+        "W                  W",
+        "W  [F]        [G]  W",
+        "W                  W",
+        "W         P        W",
+        "W                  W",
+        "W  [V]        [L]  W",
+        "W         H        W",
         "WWWWWWWWWWWWWWWWWWWWW"
     ]
 }
