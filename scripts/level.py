@@ -41,8 +41,14 @@ class Level:
                 if col == 'W':
                     Tile((x, y), [self.visible_sprites, self.obstacle_sprites, self.tile_sprites])
                 elif col == 'P':
-                    self.player = Player((x, y), [self.visible_sprites], 
-                                         self.obstacle_sprites, self.tile_sprites)
+                    self.player = Player(
+                        (x, y), 
+                        [self.visible_sprites], 
+                        self.obstacle_sprites, 
+                        self.tile_sprites,
+                        self.data, 
+                        self
+                    )
                 
                 # --- VILLAGE META-LOOP BUILDINGS ---
                 elif col == 'H': # The Shack (Home)
@@ -89,6 +95,19 @@ class Level:
         # 2. Update sprites
         self.visible_sprites.update()
         self.check_interactions()
+
+        if hasattr(self, 'player') and self.data.ink_current > 0:
+            for tile in self.tile_sprites:
+                dist = pygame.math.Vector2(self.player.rect.center).distance_to(tile.rect.center)
+                
+                # If tile is within vision and hasn't been mapped yet
+                if dist < self.player.vision_radius and not tile.mapped:
+                    tile.mapped = True
+                    
+                    # Vertical Essential: Pen Multiplier
+                    # We use the 'pen' level from your essentials dict
+                    reward = tile.revealed_value * self.data.essentials['pen']
+                    self.data.gold += reward
 
         # 3. Return destination if hitting an exit (checked by main.py)
         return self.check_transport()

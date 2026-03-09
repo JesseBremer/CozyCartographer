@@ -6,9 +6,13 @@ class Tile(pygame.sprite.Sprite):
         self.image = pygame.Surface((64, 64))
         self.image.fill('#4c566a')
         self.rect = self.image.get_rect(topleft=pos)
-        self.mapped = False
+        
+        # --- Mapping & Reward Logic ---
+        self.mapped = False          # Hidden by Fog of War
+        self.revealed_value = 10     # Base Materials yield
 
     def render(self, surface, player_pos, vision_radius):
+        # Only render if the tile has been discovered
         if self.mapped:
             dist = pygame.math.Vector2(self.rect.center).distance_to(player_pos)
             

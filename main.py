@@ -1,6 +1,7 @@
 import pygame, sys
 from scripts.data_manager import DataManager
 from scripts.level import Level
+from scripts.ui import UI
 
 class Game:
     def __init__(self):
@@ -8,6 +9,7 @@ class Game:
         self.screen = pygame.display.set_mode((1280, 720))
         pygame.display.set_caption('Cozy Cartographer')
         self.clock = pygame.time.Clock()
+        self.ui = UI()
         
         # 1. Persistent Data (Ink, Gold, Kits)
         self.data = DataManager()
@@ -60,6 +62,7 @@ class Game:
                 # 3. Rendering Logic
                 self.screen.fill('#1a1c23')
                 self.level.render()
+                self.ui.render(self.data)
                 
                 pygame.display.update()
                 self.clock.tick(60)
@@ -104,7 +107,7 @@ class Game:
                         
                         if event.key == pygame.K_ESCAPE:
                             # Move player away from the exit so they don't re-trigger it immediately
-                            self.level.player.rect.y += 64 
+                            # self.level.player.rect.y += 64 
                             selecting = False
 
                 pygame.display.update()
