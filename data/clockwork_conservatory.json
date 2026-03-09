@@ -4,9 +4,9 @@
     "fog_color": [20, 24, 30],
     "map": [
         "WWWWWWWWWWWWWWWWWWWW",
-        "W P                W",
-        "W   WWWW    E      W",
-        "W   C  W           W",
+        "                   W",
+        "X P  WWWW   E      W",
+        "    C  W           W",
         "W      W    WWWW   W",
         "W      W    W  A   W",
         "WWWWWWWWWWWWWWWWWWWW"

@@ -48,9 +48,14 @@ class Game:
                 if new_destination:
                     if new_destination == "SELECT_DUNGEON":
                         self.open_dungeon_menu()
-                    else:
-                        self.current_location = new_destination
-                        self.load_level(self.current_location)
+                    elif new_destination == "town":
+                        # Instead of loading immediately, ask first
+                        if self.confirm_exit_menu():
+                            self.current_location = "town"
+                            self.load_level(self.current_location)
+                        else:
+                            # Move player away from the exit so it doesn't loop
+                            self.level.player.rect.y += 64
 
                 # 3. Rendering Logic
                 self.screen.fill('#1a1c23')
@@ -60,31 +65,93 @@ class Game:
                 self.clock.tick(60)
 
     def open_dungeon_menu(self):
-        selecting = True
-        while selecting:
-            self.screen.fill('#2e3440')
-            # For now, we'll use a simple print, but you can draw text here later
-            # This is the "Drafting Shack" phase of your Design Doc
-            print("--- CHOOSE DESTINATION ---")
-            print("1. Clockwork Conservatory")
-            print("2. Sunken Scriptorium (Locked)")
+            """A dedicated state to select an expedition destination."""
+            selecting = True
             
+            # We use a black overlay to dim the town while picking
+            overlay = pygame.Surface((1280, 720))
+            overlay.set_alpha(180)
+            overlay.fill((0, 0, 0))
+
+            while selecting:
+                # 1. Draw the current town in the background, then the overlay
+                self.level.render()
+                self.screen.blit(overlay, (0, 0))
+
+                # 2. Draw Menu Text
+                font = pygame.font.SysFont('Arial', 40, bold=True)
+                title = font.render("--- SELECT EXPEDITION ---", True, 'white')
+                opt1 = font.render("[ 1 ] Clockwork Conservatory", True, '#ebcb8b')
+                opt2 = font.render("[ 2 ] Sunken Scriptorium (Locked)", True, '#4c566a')
+                exit_hint = font.render("Press ESC to return to Town", True, '#bf616a')
+
+                self.screen.blit(title, (400, 200))
+                self.screen.blit(opt1, (400, 300))
+                self.screen.blit(opt2, (400, 380))
+                self.screen.blit(exit_hint, (400, 550))
+
+                # 3. Wait for Input (This stops the console spam)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_1:
+                            self.current_location = 'clockwork_conservatory'
+                            self.load_level(self.current_location)
+                            selecting = False # Exit the menu and return to run()
+                        
+                        if event.key == pygame.K_ESCAPE:
+                            # Move player away from the exit so they don't re-trigger it immediately
+                            self.level.player.rect.y += 64 
+                            selecting = False
+
+                pygame.display.update()
+                self.clock.tick(60)
+
+    def confirm_exit_menu(self):
+        """Pauses the game to confirm if the player wants to leave the dungeon."""
+        waiting = True
+        
+        # Dim the background
+        overlay = pygame.Surface((1280, 720))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+
+        while waiting:
+            # 1. Render the dungeon in the background
+            self.level.render()
+            self.screen.blit(overlay, (0, 0))
+
+            # 2. Draw Menu Text (Vertical List Style)
+            font = pygame.font.SysFont('Arial', 40, bold=True)
+            
+            title = font.render("--- RETURN TO TOWN? ---", True, 'white')
+            opt_yes = font.render("[ 1 ] Yes, Secure Map Data", True, '#ebcb8b')
+            opt_no = font.render("[ 2 ] No, Keep Exploring", True, '#ebcb8b')
+            exit_hint = font.render("Press ESC to cancel", True, '#bf616a')
+
+            # Using the same coordinates as your Selection Menu for consistency
+            self.screen.blit(title, (400, 200))
+            self.screen.blit(opt_yes, (400, 300))
+            self.screen.blit(opt_no, (400, 380))
+            self.screen.blit(exit_hint, (400, 550))
+
+            # 3. Input Handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+                
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_1:
-                        self.current_location = 'clockwork_conservatory'
-                        self.load_level(self.current_location)
-                        selecting = False
-                    if event.key == pygame.K_ESCAPE: # Back out
-                        # Move player away from exit so they don't re-trigger it
-                        self.level.player.pos.y += 10 
-                        selecting = False
-            
+                        return True  # Proceed to town
+                    if event.key == pygame.K_2 or event.key == pygame.K_ESCAPE:
+                        return False # Stay in dungeon
+
             pygame.display.update()
-            self.clock.tick(60)   
+            self.clock.tick(60)
 
 if __name__ == '__main__':
     Game().run()
