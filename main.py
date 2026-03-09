@@ -6,142 +6,137 @@ from scripts.ui import UI
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((1280, 720))
+        
+        # Get the actual user monitor resolution for a perfect fit
+        info = pygame.display.Info()
+        self.window_width = info.current_w
+        self.window_height = info.current_h
+        
+        # Set to Fullscreen
+        self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.FULLSCREEN)
+        
         pygame.display.set_caption('Cozy Cartographer')
         self.clock = pygame.time.Clock()
         self.ui = UI()
         
-        # 1. Persistent Data (Ink, Gold, Kits)
         self.data = DataManager()
+        self.camera_offset = pygame.math.Vector2() 
         
-        # 2. State Management
-        # We start in the town. 
-        # This string must match your filename: data/town.json
         self.current_location = 'town' 
         self.load_level(self.current_location)
 
     def load_level(self, location_name):
-        """Swaps the current level for a new one based on a JSON file."""
-        # We re-instantiate self.level. 
-        # The Level class now handles its own Sprite Groups internally.
+        """Swaps the current level and resets camera."""
         self.level = Level(location_name, self.data)
 
-    def check_transport(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_t] and self.current_location != 'town':
-            self.current_location = 'town'
-            self.load_level('town')
-        elif keys[pygame.K_d] and self.current_location != 'clockwork_conservatory':
-            self.current_location = 'clockwork_conservatory'
-            self.load_level('clockwork_conservatory')
-
     def run(self):
-            while True:
-                # 1. Event Handling
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
+        while True:
+            # 1. Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit()
 
-                # 2. Update Logic (Only call update ONCE)
-                # The level returns a string (like 'town' or 'SELECT_DUNGEON') if the player hits an exit
-                new_destination = self.level.update()
-                
-                if new_destination:
-                    if new_destination == "SELECT_DUNGEON":
-                        self.open_dungeon_menu()
-                    elif new_destination == "town":
-                        # Instead of loading immediately, ask first
-                        if self.confirm_exit_menu():
-                            self.current_location = "town"
-                            self.load_level(self.current_location)
-                        else:
-                            # Move player away from the exit so it doesn't loop
-                            self.level.player.rect.y += 64
+            # 2. Update Logic
+            new_destination = self.level.update()
+            
+            # --- CAMERA CALCULATION ---
+            if hasattr(self.level, 'player'):
+                self.camera_offset.x = self.level.player.rect.centerx - (self.screen.get_width() / 2)
+                self.camera_offset.y = self.level.player.rect.centery - (self.screen.get_height() / 2)
 
-                # 3. Rendering Logic
-                self.screen.fill('#1a1c23')
-                self.level.render()
-                self.ui.render(self.data)
-                
-                pygame.display.update()
-                self.clock.tick(60)
+            if new_destination:
+                if new_destination == "SELECT_DUNGEON":
+                    self.open_dungeon_menu()
+                elif new_destination == "town":
+                    if self.confirm_exit_menu():
+                        self.current_location = "town"
+                        self.load_level(self.current_location)
+                    else:
+                        # Move player away so they don't re-trigger the exit immediately
+                        self.level.player.rect.y += 100
+
+            # 3. Rendering Logic
+            self.screen.fill('#1a1c23')
+            self.level.render(self.screen, self.camera_offset)
+            self.ui.render(self.data)
+            
+            pygame.display.update()
+            self.clock.tick(60)
 
     def open_dungeon_menu(self):
-            """A dedicated state to select an expedition destination."""
-            selecting = True
-            
-            # We use a black overlay to dim the town while picking
-            overlay = pygame.Surface((1280, 720))
-            overlay.set_alpha(180)
-            overlay.fill((0, 0, 0))
-
-            while selecting:
-                # 1. Draw the current town in the background, then the overlay
-                self.level.render()
-                self.screen.blit(overlay, (0, 0))
-
-                # 2. Draw Menu Text
-                font = pygame.font.SysFont('Arial', 40, bold=True)
-                title = font.render("--- SELECT EXPEDITION ---", True, 'white')
-                opt1 = font.render("[ 1 ] Clockwork Conservatory", True, '#ebcb8b')
-                opt2 = font.render("[ 2 ] Sunken Scriptorium (Locked)", True, '#4c566a')
-                exit_hint = font.render("Press ESC to return to Town", True, '#bf616a')
-
-                self.screen.blit(title, (400, 200))
-                self.screen.blit(opt1, (400, 300))
-                self.screen.blit(opt2, (400, 380))
-                self.screen.blit(exit_hint, (400, 550))
-
-                # 3. Wait for Input (This stops the console spam)
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        sys.exit()
-                    
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_1:
-                            self.current_location = 'clockwork_conservatory'
-                            self.load_level(self.current_location)
-                            selecting = False # Exit the menu and return to run()
-                        
-                        if event.key == pygame.K_ESCAPE:
-                            # Move player away from the exit so they don't re-trigger it immediately
-                            # self.level.player.rect.y += 64 
-                            selecting = False
-
-                pygame.display.update()
-                self.clock.tick(60)
-
-    def confirm_exit_menu(self):
-        """Pauses the game to confirm if the player wants to leave the dungeon."""
-        waiting = True
-        
-        # Dim the background
-        overlay = pygame.Surface((1280, 720))
-        overlay.set_alpha(180)
+        selecting = True
+        overlay = pygame.Surface(self.screen.get_size())
+        overlay.set_alpha(220)
         overlay.fill((0, 0, 0))
+        
+        sw, sh = self.screen.get_width(), self.screen.get_height()
+        center_x = sw // 2
 
-        while waiting:
-            # 1. Render the dungeon in the background
-            self.level.render()
+        while selecting:
+            self.level.render(self.screen, self.camera_offset)
             self.screen.blit(overlay, (0, 0))
 
-            # 2. Draw Menu Text (Vertical List Style)
-            font = pygame.font.SysFont('Arial', 40, bold=True)
+            font = pygame.font.SysFont('Arial', 50, bold=True)
+            hint_font = pygame.font.SysFont('Arial', 30)
             
-            title = font.render("--- RETURN TO TOWN? ---", True, 'white')
-            opt_yes = font.render("[ 1 ] Yes, Secure Map Data", True, '#ebcb8b')
-            opt_no = font.render("[ 2 ] No, Keep Exploring", True, '#ebcb8b')
-            exit_hint = font.render("Press ESC to cancel", True, '#bf616a')
+            def draw_center(text, y, color='white', custom_font=font):
+                surf = custom_font.render(text, True, color)
+                self.screen.blit(surf, (center_x - surf.get_width() // 2, y))
 
-            # Using the same coordinates as your Selection Menu for consistency
-            self.screen.blit(title, (400, 200))
-            self.screen.blit(opt_yes, (400, 300))
-            self.screen.blit(opt_no, (400, 380))
-            self.screen.blit(exit_hint, (400, 550))
+            draw_center("--- THE EXPEDITION GATE ---", sh * 0.2, '#eceff4')
+            draw_center("The ruins shift and change beyond this point.", sh * 0.35, '#d8dee9', hint_font)
+            draw_center("[ 1 ] I am ready to explore", sh * 0.5, '#ebcb8b')
+            draw_center("[ 2 ] I still need to prepare", sh * 0.6, '#bf616a')
+            draw_center("Tip: Ensure your Ink is full at the Foundry first!", sh * 0.8, '#81a1c1', hint_font)
 
-            # 3. Input Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                    
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        self.current_location = 'clockwork_conservatory'
+                        self.load_level(self.current_location)
+                        selecting = False
+                    if event.key == pygame.K_2 or event.key == pygame.K_ESCAPE:
+                        self.level.player.rect.y += 100
+                        selecting = False
+
+            pygame.display.update()
+            self.clock.tick(60)
+
+    def confirm_exit_menu(self):
+        """Dynamic Fullscreen confirmation menu to avoid crashes."""
+        waiting = True
+        overlay = pygame.Surface(self.screen.get_size())
+        overlay.set_alpha(200)
+        overlay.fill((0, 0, 0))
+
+        sw, sh = self.screen.get_width(), self.screen.get_height()
+        center_x = sw // 2
+
+        while waiting:
+            # FIX: Pass camera_offset to avoid TypeError crash
+            self.level.render(self.screen, self.camera_offset)
+            self.screen.blit(overlay, (0, 0))
+
+            font = pygame.font.SysFont('Arial', 50, bold=True)
+            
+            def draw_center(text, y, color='white'):
+                surf = font.render(text, True, color)
+                self.screen.blit(surf, (center_x - surf.get_width() // 2, y))
+
+            draw_center("--- RETURN TO TOWN? ---", sh * 0.3, '#eceff4')
+            draw_center("[ 1 ] Yes, Secure Map Data", sh * 0.45, '#ebcb8b')
+            draw_center("[ 2 ] No, Keep Exploring", sh * 0.55, '#a3be8c')
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -149,9 +144,9 @@ class Game:
                 
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_1:
-                        return True  # Proceed to town
+                        return True 
                     if event.key == pygame.K_2 or event.key == pygame.K_ESCAPE:
-                        return False # Stay in dungeon
+                        return False
 
             pygame.display.update()
             self.clock.tick(60)
