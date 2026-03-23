@@ -102,12 +102,19 @@ class Level:
     
     def check_interactions(self):
         keys = pygame.key.get_pressed()
+        
         if keys[pygame.K_SPACE]:
             for sprite in self.interactable_sprites:
                 dist = pygame.math.Vector2(self.player.rect.center).distance_to(sprite.rect.center)
+                
                 if dist < 80:
-                    # Passing full data object for Foundry/Shack logic
-                    sprite.interact(self.data)
+                    # IMPORTANT: Capture the return value (like "OPEN_FOUNDRY_SHOP")
+                    result = sprite.interact(self.data)
+                    
+                    # Pass it back up to the Game.run() loop
+                    return result
+        
+        return None
 
     def check_transport(self):
         for sprite in self.transport_sprites:
@@ -126,7 +133,7 @@ class Level:
             pygame.draw.circle(self.fog_mask, (255, 0, 255), screen_center, self.player.vision_radius)
         
         self.visible_sprites.update()
-        self.check_interactions()
+        interaction_result = self.check_interactions()
 
         # 2. Mapping Logic (Discovery consumes Ink and yields Gold)
         if self.data.ink_current > 0:
@@ -136,6 +143,9 @@ class Level:
                     tile.mapped = True
                     # Reward based on Pen Multiplier
                     self.data.gold += (tile.revealed_value * self.data.essentials['pen'])
+
+        if interaction_result:
+            return interaction_result
 
         return self.check_transport()
 

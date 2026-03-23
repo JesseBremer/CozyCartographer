@@ -67,8 +67,12 @@ class Game:
                         if self.confirm_exit_menu():
                             self.current_location = "town"
                             self.load_level(self.current_location)
-                        else:
-                            self.level.player.rect.y += 100
+                    # Check for MENUS first
+                    elif new_destination == "OPEN_FOUNDRY_SHOP":
+                        self.open_foundry_shop()
+                        self.level.player.rect.y += 64 # Safety nudge
+                    else:
+                        self.level.player.rect.y += 100
 
             # --- 3. RENDERING LOGIC ---
             self.screen.fill('#1a1c23')
@@ -163,6 +167,72 @@ class Game:
                         return True 
                     if event.key == pygame.K_2 or event.key == pygame.K_ESCAPE:
                         return False
+
+            pygame.display.update()
+            self.clock.tick(60)
+
+
+    def open_foundry_shop(self):
+        shopping = True
+        
+        # Dim the background
+        overlay = pygame.Surface(self.screen.get_size())
+        overlay.set_alpha(200)
+        overlay.fill((20, 30, 40))
+
+        while shopping:
+            # Draw the game behind the menu
+            self.level.render(self.screen, self.camera_offset)
+            self.screen.blit(overlay, (0, 0))
+
+            # Text Setup
+            font = pygame.font.SysFont('Arial', 40, bold=True)
+            item_font = pygame.font.SysFont('Arial', 30)
+            cx = self.screen.get_width() // 2
+            cy = self.screen.get_height() // 2
+
+            # Title
+            title_surf = font.render("--- THE INK FOUNDRY ---", True, '#81a1c1')
+            self.screen.blit(title_surf, (cx - title_surf.get_width()//2, cy - 200))
+
+            # Stats
+            stats_text = item_font.render(f"Ink: {self.data.ink_current}/{self.data.essentials['ink_max']} | Gold: {self.data.gold}g", True, 'white')
+            self.screen.blit(stats_text, (cx - stats_text.get_width()//2, cy - 120))
+
+            # Menu Options
+            options = [
+                "[ 1 ] Full Refill (25 Gold)",
+                "[ 2 ] Buy Ink Vial (40 Gold)",
+                "[ ESC ] Leave Shop"
+            ]
+
+            for i, opt in enumerate(options):
+                color = '#ebcb8b' if i < 2 else '#bf616a'
+                opt_surf = item_font.render(opt, True, color)
+                self.screen.blit(opt_surf, (cx - opt_surf.get_width()//2, cy - 20 + (i * 60)))
+
+            # Event Handling for Shop
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit(); sys.exit()
+                
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        # Refill Logic
+                        if self.data.gold >= 25 and self.data.ink_current < self.data.essentials['ink_max']:
+                            self.data.gold -= 25
+                            self.data.ink_current = self.data.essentials['ink_max']
+                            print("Refilled Ink via Shop!")
+                    
+                    if event.key == pygame.K_2:
+                        # Buy Consumable Logic
+                        if self.data.gold >= 40:
+                            if self.data.add_to_inventory('Ink Vial', 1):
+                                self.data.gold -= 40
+                                print("Bought Ink Vial!")
+
+                    if event.key == pygame.K_ESCAPE:
+                        shopping = False
 
             pygame.display.update()
             self.clock.tick(60)

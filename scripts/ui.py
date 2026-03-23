@@ -70,6 +70,39 @@ class UI:
         # 5. Draw Gold/Ink at the bottom
         gold_text = small_font.render(f"Gold: {data.gold}g", True, '#ebcb8b')
         screen.blit(gold_text, (70, 400))
+
+    def draw_foundry_menu(self, screen, data):
+        # Dark overlay
+        overlay = pygame.Surface(screen.get_size())
+        overlay.set_alpha(180)
+        overlay.fill((20, 20, 30))
+        screen.blit(overlay, (0, 0))
+
+        font = pygame.font.SysFont('Arial', 40, bold=True)
+        item_font = pygame.font.SysFont('Arial', 30)
+        
+        # Center coordinates
+        cx, cy = screen.get_width() // 2, screen.get_height() // 2
+
+        # 1. Header
+        title = font.render("--- THE INK FOUNDRY ---", True, '#81a1c1')
+        screen.blit(title, (cx - title.get_width()//2, cy - 200))
+
+        # 2. Options
+        options = [
+            f"[ 1 ] Full Refill - 25g (Current: {data.ink_current}/{data.essentials['ink_max']})",
+            "[ 2 ] Buy Ink Vial (Consumable) - 40g",
+            "[ ESC ] Leave Foundry"
+        ]
+
+        for i, text in enumerate(options):
+            color = '#ebcb8b' if i < 2 else '#bf616a'
+            surf = item_font.render(text, True, color)
+            screen.blit(surf, (cx - surf.get_width()//2, cy - 50 + (i * 60)))
+            
+        # 3. Player Wallet
+        wallet = item_font.render(f"Your Gold: {data.gold}g", True, 'white')
+        screen.blit(wallet, (cx - wallet.get_width()//2, cy + 200))
     
 
     def render(self, data):

@@ -21,19 +21,7 @@ class SpecialistObject(pygame.sprite.Sprite):
         
         # --- 1. VILLAGE BUILDINGS ---
         if self.lock_type == 'Foundry':
-            refill_cost = 25
-            # Use the DataManager logic to handle the transaction
-            if data.gold >= refill_cost:
-                if data.ink_current < data.essentials['ink_max']:
-                    data.gold -= refill_cost
-                    data.ink_current = data.essentials['ink_max']
-                    print(f"Ink Refilled! Remaining Gold: {data.gold}")
-                    return True
-                else:
-                    print("Your inkwell is already full!")
-            else:
-                print(f"Not enough gold! Need {refill_cost}g.")
-            return False
+            return "OPEN_FOUNDRY_SHOP"
 
         elif self.lock_type == 'Shack':
             print("Mapping data secured. Village growth increased.")
