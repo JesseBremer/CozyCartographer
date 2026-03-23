@@ -33,22 +33,18 @@ class Game:
     def run(self):
         while True:
             # --- 1. CONSOLIDATED EVENT HANDLING ---
-            # Do NOT call pygame.event.get() more than once per frame!
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 
                 if event.type == pygame.KEYDOWN:
-                    # System Keys
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit()
                     
-                    # --- THE INVENTORY TOGGLE ---
                     if event.key in [pygame.K_TAB, pygame.K_i]:
                         self.show_inventory = not self.show_inventory
-                        print(f"Inventory Toggled: {self.show_inventory}") # Debug check
 
             # --- 2. UPDATE LOGIC (Pause if inventory is open) ---
             if not self.show_inventory:
@@ -60,14 +56,18 @@ class Game:
 
                 # --- NEW SIGNAL HANDLING ---
                 if new_destination:
-                    if new_destination == "OPEN_FOUNDRY_SHOP":
-                        self.open_foundry_shop()
-                        self.level.player.rect.y += 64 # Stop the spam immediately
+                    # A. Handle Universal Shops (Foundry, Guild, Archive, etc.)
+                    if isinstance(new_destination, str) and new_destination.startswith("OPEN_SHOP_"):
+                        shop_type = new_destination.replace("OPEN_SHOP_", "")
+                        self.open_shop_menu(shop_type) # The generic menu function
+                        self.level.player.rect.y += 64 
                         
+                    # B. Handle Dungeon Selection
                     elif new_destination == "SELECT_DUNGEON":
                         self.open_dungeon_menu()
                         self.level.player.rect.y += 64 
                         
+                    # C. Handle Town Return
                     elif new_destination == "town":
                         if self.confirm_exit_menu():
                             self.current_location = "town"
@@ -75,19 +75,15 @@ class Game:
                         else:
                             self.level.player.rect.y += 100
                             
-                    elif new_destination == True: # For buildings like the Shack
-                        # This handles buildings that just print to console
-                        # We nudge the player so it only prints ONCE
+                    # D. Handle Simple Interactions (Like the Shack)
+                    elif new_destination == True: 
                         self.level.player.rect.y += 64
 
             # --- 3. RENDERING LOGIC ---
             self.screen.fill('#1a1c23')
             self.level.render(self.screen, self.camera_offset)
-            
-            # Draw standard UI (Bars/Gold)
             self.ui.render(self.data)
 
-            # Draw Inventory Overlay ON TOP
             if self.show_inventory:
                 self.ui.draw_inventory_menu(self.screen, self.data)
             
@@ -177,71 +173,81 @@ class Game:
             pygame.display.update()
             self.clock.tick(60)
 
-
-    def open_foundry_shop(self):
+    def open_shop_menu(self, shop_type):
         shopping = True
         
-        # Dim the background
-        overlay = pygame.Surface(self.screen.get_size())
-        overlay.set_alpha(200)
-        overlay.fill((20, 30, 40))
+        # Define Shop Inventories
+        # Format: "Display Name": (Cost, ItemName, Uses/Value)
+        shops = {
+            'FOUNDRY': {
+                'title': 'THE INK FOUNDRY',
+                'items': {"Refill Ink": (25, "REFILL", 100), "Ink Vial": (40, "Ink Vial", 1)}
+            },
+            'GUILD': {
+                'title': 'EXPLORERS GUILD',
+                'items': {"Cipher Kit": (50, "Cipher", 3), "Extractor": (75, "Extractor", 5), "Architect Set": (100, "Architect", 2)}
+            },
+            'ARCHIVE': {
+                'title': 'THE ARCHIVE',
+                'items': {"Old Map": (30, "Map Fragment", 1), "Research Notes": (60, "Focus Buff", 1)}
+            },
+            'GREENHOUSE': {
+                'title': 'THE GREENHOUSE',
+                'items': {"Small Satchel": (150, "UPGRADE_SATCHEL", 1), "Herbal Tea": (20, "Speed Buff", 1)}
+            }
+        }
+
+        current_shop = shops.get(shop_type, shops['FOUNDRY'])
 
         while shopping:
-            # Draw the game behind the menu
             self.level.render(self.screen, self.camera_offset)
-            self.screen.blit(overlay, (0, 0))
+            # Use a dark overlay
+            overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+            overlay.fill((20, 30, 40, 220))
+            self.screen.blit(overlay, (0,0))
 
-            # Text Setup
+            # UI Rendering
             font = pygame.font.SysFont('Arial', 40, bold=True)
             item_font = pygame.font.SysFont('Arial', 30)
-            cx = self.screen.get_width() // 2
-            cy = self.screen.get_height() // 2
+            cx, cy = self.screen.get_width() // 2, self.screen.get_height() // 2
 
-            # Title
-            title_surf = font.render("--- THE INK FOUNDRY ---", True, '#81a1c1')
+            # Draw Title
+            title_surf = font.render(current_shop['title'], True, '#81a1c1')
             self.screen.blit(title_surf, (cx - title_surf.get_width()//2, cy - 200))
 
-            # Stats
-            stats_text = item_font.render(f"Ink: {self.data.ink_current}/{self.data.essentials['ink_max']} | Gold: {self.data.gold}g", True, 'white')
-            self.screen.blit(stats_text, (cx - stats_text.get_width()//2, cy - 120))
+            # Draw Items
+            for i, (name, details) in enumerate(current_shop['items'].items()):
+                cost, item_id, val = details
+                text = f"[ {i+1} ] {name} - {cost}g"
+                color = '#ebcb8b' if self.data.gold >= cost else '#bf616a'
+                item_surf = item_font.render(text, True, color)
+                self.screen.blit(item_surf, (cx - item_surf.get_width()//2, cy - 50 + (i * 60)))
 
-            # Menu Options
-            options = [
-                "[ 1 ] Full Refill (25 Gold)",
-                "[ 2 ] Buy Ink Vial (40 Gold)",
-                "[ ESC ] Leave Shop"
-            ]
-
-            for i, opt in enumerate(options):
-                color = '#ebcb8b' if i < 2 else '#bf616a'
-                opt_surf = item_font.render(opt, True, color)
-                self.screen.blit(opt_surf, (cx - opt_surf.get_width()//2, cy - 20 + (i * 60)))
-
-            # Event Handling for Shop
+            # Handle Input
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit(); sys.exit()
-                
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_1:
-                        # Refill Logic
-                        if self.data.gold >= 25 and self.data.ink_current < self.data.essentials['ink_max']:
-                            self.data.gold -= 25
-                            self.data.ink_current = self.data.essentials['ink_max']
-                            print("Refilled Ink via Shop!")
+                    if event.key == pygame.K_ESCAPE: shopping = False
                     
-                    if event.key == pygame.K_2:
-                        # Buy Consumable Logic
-                        if self.data.gold >= 40:
-                            if self.data.add_to_inventory('Ink Vial', 1):
-                                self.data.gold -= 40
-                                print("Bought Ink Vial!")
-
-                    if event.key == pygame.K_ESCAPE:
-                        shopping = False
-
+                    # Check keys 1, 2, 3...
+                    for i, (name, details) in enumerate(current_shop['items'].items()):
+                        if event.key == getattr(pygame, f"K_{i+1}"):
+                            cost, item_id, val = details
+                            if self.data.gold >= cost:
+                                # SPECIAL CASES (Refills/Upgrades)
+                                if item_id == "REFILL":
+                                    self.data.gold -= cost
+                                    self.data.ink_current = self.data.essentials['ink_max']
+                                elif item_id == "UPGRADE_SATCHEL":
+                                    self.data.gold -= cost
+                                    self.data.essentials['satchel'] += 1
+                                # STANDARD ITEMS
+                                elif self.data.add_to_inventory(item_id, val):
+                                    self.data.gold -= cost
+                                    print(f"Bought {item_id}")
+            
             pygame.display.update()
             self.clock.tick(60)
+    
 
 if __name__ == '__main__':
     Game().run()

@@ -17,32 +17,17 @@ class SpecialistObject(pygame.sprite.Sprite):
         self.interacted = False
 
     def interact(self, data):
-        """Modified to handle the Foundry refill and Consumable tools."""
+        # Village Building Signals
+        village_map = {
+            'Foundry': 'OPEN_SHOP_FOUNDRY',
+            'Guild': 'OPEN_SHOP_GUILD',
+            'Archive': 'OPEN_SHOP_ARCHIVE',
+            'Greenhouse': 'OPEN_SHOP_GREENHOUSE',
+            'Shack': 'OPEN_SHOP_SHACK'
+        }
         
-        # --- 1. VILLAGE BUILDINGS ---
-        if self.lock_type == 'Foundry':
-            return "OPEN_FOUNDRY_SHOP"
-
-        elif self.lock_type == 'Shack':
-            print("Mapping data secured. Village growth increased.")
-            return True
-        
-        elif self.lock_type == 'Guild':
-            # Simple Shop Logic: Buy a 'Cipher' kit for 50g
-            ITEM_NAME = 'Cipher'
-            COST = 50
-            USES = 3
-
-            if data.gold >= COST:
-                if data.add_to_inventory(ITEM_NAME, USES):
-                    data.gold -= COST
-                    print(f"Purchased {ITEM_NAME}! {len(data.inventory)}/{data.essentials['satchel']} Slots used.")
-                    return True
-                else:
-                    print("Satchel is full! Upgrade at the Greenhouse.")
-            else:
-                print(f"Need {COST}g to buy a {ITEM_NAME}.")
-            return False
+        if self.lock_type in village_map:
+            return village_map[self.lock_type]
 
         # --- 2. DUNGEON SPECIALISTS (Consumable Logic) ---
         # Look for a matching tool in the inventory list
