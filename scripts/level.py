@@ -102,18 +102,12 @@ class Level:
     
     def check_interactions(self):
         keys = pygame.key.get_pressed()
-        
         if keys[pygame.K_SPACE]:
             for sprite in self.interactable_sprites:
                 dist = pygame.math.Vector2(self.player.rect.center).distance_to(sprite.rect.center)
-                
                 if dist < 80:
-                    # IMPORTANT: Capture the return value (like "OPEN_FOUNDRY_SHOP")
-                    result = sprite.interact(self.data)
-                    
-                    # Pass it back up to the Game.run() loop
-                    return result
-        
+                    # Capture result ('OPEN_FOUNDRY_SHOP' or True or False)
+                    return sprite.interact(self.data)
         return None
 
     def check_transport(self):

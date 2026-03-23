@@ -53,26 +53,32 @@ class Game:
             # --- 2. UPDATE LOGIC (Pause if inventory is open) ---
             if not self.show_inventory:
                 new_destination = self.level.update()
-                
-                # Camera Tracking
+
                 if hasattr(self.level, 'player'):
                     self.camera_offset.x = self.level.player.rect.centerx - (self.screen.get_width() / 2)
                     self.camera_offset.y = self.level.player.rect.centery - (self.screen.get_height() / 2)
 
-                # Level Swapping Logic
+                # --- NEW SIGNAL HANDLING ---
                 if new_destination:
-                    if new_destination == "SELECT_DUNGEON":
+                    if new_destination == "OPEN_FOUNDRY_SHOP":
+                        self.open_foundry_shop()
+                        self.level.player.rect.y += 64 # Stop the spam immediately
+                        
+                    elif new_destination == "SELECT_DUNGEON":
                         self.open_dungeon_menu()
+                        self.level.player.rect.y += 64 
+                        
                     elif new_destination == "town":
                         if self.confirm_exit_menu():
                             self.current_location = "town"
                             self.load_level(self.current_location)
-                    # Check for MENUS first
-                    elif new_destination == "OPEN_FOUNDRY_SHOP":
-                        self.open_foundry_shop()
-                        self.level.player.rect.y += 64 # Safety nudge
-                    else:
-                        self.level.player.rect.y += 100
+                        else:
+                            self.level.player.rect.y += 100
+                            
+                    elif new_destination == True: # For buildings like the Shack
+                        # This handles buildings that just print to console
+                        # We nudge the player so it only prints ONCE
+                        self.level.player.rect.y += 64
 
             # --- 3. RENDERING LOGIC ---
             self.screen.fill('#1a1c23')
