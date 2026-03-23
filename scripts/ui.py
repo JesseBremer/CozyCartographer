@@ -35,6 +35,43 @@ class UI:
             text_surf = self.font.render(display_string, True, 'white')
             self.display_surface.blit(text_surf, (x, y))
 
+    def draw_inventory_menu(self, screen, data):
+        # 1. Create a semi-transparent overlay
+        overlay = pygame.Surface((300, 400))
+        overlay.set_alpha(200)
+        overlay.fill((46, 52, 64)) # A nice Nordic dark blue
+        screen.blit(overlay, (50, 50))
+        
+        font = pygame.font.SysFont('Arial', 22, bold=True)
+        small_font = pygame.font.SysFont('Arial', 18)
+
+        # 2. Draw Header
+        title = font.render("SATCHEL CONTENTS", True, '#eceff4')
+        screen.blit(title, (70, 70))
+        
+        # 3. Draw Slots Info
+        slots_text = small_font.render(f"Slots: {len(data.inventory)}/{data.essentials['satchel']}", True, '#81a1c1')
+        screen.blit(slots_text, (70, 100))
+
+        # 4. List Items & Durability
+        for i, item in enumerate(data.inventory):
+            y_pos = 140 + (i * 40)
+            
+            # Item Name
+            name_text = small_font.render(item['name'], True, '#ebcb8b')
+            screen.blit(name_text, (80, y_pos))
+            
+            # Durability "Pips" (e.g., [ |||  ])
+            uses = item['uses']
+            pips = "|" * uses
+            durability_text = small_font.render(f"[{pips}]", True, '#a3be8c')
+            screen.blit(durability_text, (200, y_pos))
+
+        # 5. Draw Gold/Ink at the bottom
+        gold_text = small_font.render(f"Gold: {data.gold}g", True, '#ebcb8b')
+        screen.blit(gold_text, (70, 400))
+    
+
     def render(self, data):
         # Draw the essential stats from DataManager
         self.draw_ink_bar(data.ink_current, data.essentials['ink_max'])

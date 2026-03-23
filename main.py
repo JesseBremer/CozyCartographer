@@ -6,6 +6,7 @@ from scripts.ui import UI
 class Game:
     def __init__(self):
         pygame.init()
+        self.show_inventory = False
         
         # Get the actual user monitor resolution for a perfect fit
         info = pygame.display.Info()
@@ -31,43 +32,58 @@ class Game:
 
     def run(self):
         while True:
-            # 1. Event Handling
+            # --- 1. CONSOLIDATED EVENT HANDLING ---
+            # Do NOT call pygame.event.get() more than once per frame!
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 
                 if event.type == pygame.KEYDOWN:
+                    # System Keys
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit()
+                    
+                    # --- THE INVENTORY TOGGLE ---
+                    if event.key in [pygame.K_TAB, pygame.K_i]:
+                        self.show_inventory = not self.show_inventory
+                        print(f"Inventory Toggled: {self.show_inventory}") # Debug check
 
-            # 2. Update Logic
-            new_destination = self.level.update()
-            
-            # --- CAMERA CALCULATION ---
-            if hasattr(self.level, 'player'):
-                self.camera_offset.x = self.level.player.rect.centerx - (self.screen.get_width() / 2)
-                self.camera_offset.y = self.level.player.rect.centery - (self.screen.get_height() / 2)
+            # --- 2. UPDATE LOGIC (Pause if inventory is open) ---
+            if not self.show_inventory:
+                new_destination = self.level.update()
+                
+                # Camera Tracking
+                if hasattr(self.level, 'player'):
+                    self.camera_offset.x = self.level.player.rect.centerx - (self.screen.get_width() / 2)
+                    self.camera_offset.y = self.level.player.rect.centery - (self.screen.get_height() / 2)
 
-            if new_destination:
-                if new_destination == "SELECT_DUNGEON":
-                    self.open_dungeon_menu()
-                elif new_destination == "town":
-                    if self.confirm_exit_menu():
-                        self.current_location = "town"
-                        self.load_level(self.current_location)
-                    else:
-                        # Move player away so they don't re-trigger the exit immediately
-                        self.level.player.rect.y += 100
+                # Level Swapping Logic
+                if new_destination:
+                    if new_destination == "SELECT_DUNGEON":
+                        self.open_dungeon_menu()
+                    elif new_destination == "town":
+                        if self.confirm_exit_menu():
+                            self.current_location = "town"
+                            self.load_level(self.current_location)
+                        else:
+                            self.level.player.rect.y += 100
 
-            # 3. Rendering Logic
+            # --- 3. RENDERING LOGIC ---
             self.screen.fill('#1a1c23')
             self.level.render(self.screen, self.camera_offset)
+            
+            # Draw standard UI (Bars/Gold)
             self.ui.render(self.data)
+
+            # Draw Inventory Overlay ON TOP
+            if self.show_inventory:
+                self.ui.draw_inventory_menu(self.screen, self.data)
             
             pygame.display.update()
             self.clock.tick(60)
+
 
     def open_dungeon_menu(self):
         selecting = True
