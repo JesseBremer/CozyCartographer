@@ -59,9 +59,28 @@ class Level:
             for col_index, col in enumerate(row):
                 x, y = col_index * 64, row_index * 64
                 
-                # --- CORE MAPPING ---
+                # --- WALLS ---
                 if col == 'W':
                     Tile((x, y), [self.visible_sprites, self.obstacle_sprites, self.tile_sprites])
+                
+                # --- EXITS & DUNGEON ENTRANCE ---
+                elif col == 'X':
+                    dest = "SELECT_DUNGEON" if self.is_town else "town"
+                    TransportTile((x,y), [self.visible_sprites, self.transport_sprites], dest)
+                    
+                    if not self.is_town:
+                        # Create player exactly on the X tile
+                        self.player = Player(
+                            (x, y), [self.visible_sprites], 
+                            self.obstacle_sprites, self.tile_sprites,
+                            self.data, self
+                        )
+                        
+                        # IMPORTANT: Move them 1 full tile North so they are 
+                        # standing in the "Entry Hallway" we forced in the generator.
+                        self.player.rect.y -= 64
+
+                # --- TOWN PLAYER SPAWN (For town.json) ---
                 elif col == 'P':
                     self.player = Player(
                         (x, y), [self.visible_sprites], 
@@ -80,12 +99,7 @@ class Level:
                 elif col == 'C': SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Cipher', 50)
                 elif col == 'E': SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Extractor', 100)
                 elif col == 'A': SpecialistObject((x,y), [self.visible_sprites, self.interactable_sprites], 'Architect', 150)
-                
-                # --- EXITS ---
-                elif col == 'X':
-                    dest = "SELECT_DUNGEON" if self.is_town else "town"
-                    TransportTile((x,y), [self.visible_sprites, self.transport_sprites], dest)
-
+    
     def check_interactions(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
